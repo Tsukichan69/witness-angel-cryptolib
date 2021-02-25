@@ -1,6 +1,8 @@
 
-import pprint
 from wacryptolib.container import (LOCAL_ESCROW_MARKER, SHARED_SECRET_MARKER,)
+from wacryptolib.encryption import (SUPPORTED_ENCRYPTION_ALGOS)
+from wacryptolib.signature import (SUPPORTED_SIGNATURE_ALGOS)
+from wacryptolib.utilities import (SUPPORTED_HASH_ALGOS)
 from schema import Schema, Optional, Or, SchemaError
 from uuid import UUID
 import json
@@ -9,24 +11,24 @@ from json_schema import json_schema
 """ Schema = Creation of a Schema for the containers, depending on the level of complexity, some elements are optional"""
 SCHEMA_CONTAINER = Schema({
     "data_encryption_strata" : [{
-        "data_encryption_algo": str,
+        "data_encryption_algo": Or(*SUPPORTED_ENCRYPTION_ALGOS),
         "key_encryption_strata": [{
-            "key_encryption_algo" : str, 
-            "key_escrow": {"escrow_type": str},
+            "key_encryption_algo" : "RSA_OAEP", 
+            "key_escrow": LOCAL_ESCROW_MARKER,
             Optional("keychain_uid"): object,}, 
             {
-            Optional("key_encryption_algo"): str,
-            Optional("key_escrow"): {"escrow_type": str}
+            Optional("key_encryption_algo"): "RSA_OAEP",
+            Optional("key_escrow"): LOCAL_ESCROW_MARKER
             }],
         Optional("data_signatures"): [{
-            "message_digest_algo": str,
-            "signature_algo": str, 
-            "signature_escrow": {"escrow_type": str},
+            "message_digest_algo": Or(*SUPPORTED_HASH_ALGOS),
+            "signature_algo": Or(*SUPPORTED_SIGNATURE_ALGOS), 
+            "signature_escrow": LOCAL_ESCROW_MARKER,
             Optional("keychain_uid"): object},
             {
-            Optional("message_digest_algo"): str,
-            Optional("signature_algo"): str,
-            Optional("signature_escrow") : {"escrow_type": str},
+            Optional("message_digest_algo"): Or(*SUPPORTED_HASH_ALGOS),
+            Optional("signature_algo"): Or(*SUPPORTED_SIGNATURE_ALGOS),
+            Optional("signature_escrow") : LOCAL_ESCROW_MARKER,
             Optional("keychain_uid"): object}],
         }]
 })
@@ -92,31 +94,31 @@ def checkSchema(conf_schema, conf):
 """ json_schema = To create the Json_schema file
     dumps = To create the Json file """
 json_container_schema_tree = json.dumps(SCHEMA_CONTAINER.json_schema("Schema_container"), indent=4)
-
+""" print(json_container_schema_tree) """
 
 SCHEMA_SHAMIR_CONTAINER = Schema({
     "data_encryption_strata": [{
-        "data_encryption_algo": str,
+        "data_encryption_algo": Or(*SUPPORTED_ENCRYPTION_ALGOS),
         "key_encryption_strata": [{
-            "key_encryption_algo": str,
+            "key_encryption_algo": Or("RSA_OAEP", SHARED_SECRET_MARKER),
             Optional("key_shared_secret_threshold"): int,
-            Optional("key_escrow"): {"escrow_type": str},
+            Optional("key_escrow"): LOCAL_ESCROW_MARKER,
             Optional("key_shared_secret_escrows"): [{
                 "key_encryption_strata": [{
-                    "key_encryption_algo": str,
-                    "key_escrow": {"escrow_type": str},
+                    "key_encryption_algo": "RSA_OAEP",
+                    "key_escrow": LOCAL_ESCROW_MARKER,
                     Optional("keychain_uid"): object
                                         }]
                                     }]}],
         Optional("data_signatures"): [{
-            "message_digest_algo": str,
-            "signature_algo": str,
-            "signature_escrow": {"escrow_type": str},
+            "message_digest_algo": Or(*SUPPORTED_HASH_ALGOS),
+            "signature_algo": Or(*SUPPORTED_SIGNATURE_ALGOS),
+            "signature_escrow": LOCAL_ESCROW_MARKER,
             Optional("keychain_uid"): object},
             {
-            Optional("message_digest_algo"): str,
-            Optional("signature_algo"):str,
-            Optional("signature_escrow"): {"escrow_type": str}}]
+            Optional("message_digest_algo"): Or(*SUPPORTED_HASH_ALGOS),
+            Optional("signature_algo"):Or(*SUPPORTED_SIGNATURE_ALGOS),
+            Optional("signature_escrow"): LOCAL_ESCROW_MARKER}]
     }]
     })
 
@@ -196,11 +198,11 @@ COMPLEX_SHAMIR_CONTAINER_CONF = dict(
     ]
 )
 
-""" print(check(SCHEMA_SHAMIR_CONTAINER, COMPLEX_SHAMIR_CONTAINER_CONF)) """
+""" print(checkSchema(SCHEMA_SHAMIR_CONTAINER, COMPLEX_SHAMIR_CONTAINER_CONF)) """
 
 """ json_schema = To create the Json file """
 json_shamir_container_schema_tree = json.dumps(SCHEMA_SHAMIR_CONTAINER.json_schema("Schema_container"), indent=4)
-print(json_shamir_container_schema_tree)
+""" print(json_shamir_container_schema_tree) """
 
 def generate_container_schema():
     pass
