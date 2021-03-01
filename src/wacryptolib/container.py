@@ -1041,6 +1041,7 @@ class ContainerStorage:
         return result
 
 
+
 def get_encryption_configuration_summary(conf_or_container):
     """
     Returns a string summary of the layers of encryption/signature of a container or a configuration tree.
