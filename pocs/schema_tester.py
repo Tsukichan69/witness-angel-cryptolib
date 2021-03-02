@@ -4,11 +4,11 @@ from wacryptolib.encryption import (SUPPORTED_ENCRYPTION_ALGOS)
 from wacryptolib.signature import (SUPPORTED_SIGNATURE_ALGOS)
 from wacryptolib.utilities import (SUPPORTED_HASH_ALGOS)
 from wacryptolib.key_generation import (ASYMMETRIC_KEY_TYPES_REGISTRY)
-from schema import Schema, Optional, Or, And, SchemaError, Const
+from schema import Schema, Optional, Or, And, SchemaError, Const, Regex
 from uuid import UUID
 import json
 import math
-from json_schema import json_schema
+from json_schema import json_schema, validate
 
 """ Pieces of the global Schema for containers :
 
@@ -17,7 +17,7 @@ Secund "SHAMIR_CONTAINER_PIECE" is piece of the Shamir container, can be recursi
 CONTAINER_PIECE = {
             "key_encryption_algo" : Or(*ASYMMETRIC_KEY_TYPES_REGISTRY), 
             "key_escrow": Const(LOCAL_ESCROW_MARKER),
-            Optional("keychain_uid"): object}
+            Optional("keychain_uid"): And(str, Regex('[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}'))}
 
 RECURSIVE_SHAMIR=[]
 SHAMIR_CONTAINER_PIECE = Schema({
@@ -27,7 +27,7 @@ SHAMIR_CONTAINER_PIECE = Schema({
                 "key_encryption_strata": Or([{
                     "key_encryption_algo": Or(*ASYMMETRIC_KEY_TYPES_REGISTRY),
                     "key_escrow": Const(LOCAL_ESCROW_MARKER),
-                    Optional("keychain_uid"): object}], RECURSIVE_SHAMIR),
+                    Optional("keychain_uid"): And(str, Regex('[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}'))}], RECURSIVE_SHAMIR),
 }]}, name= "Recursive_shamir", as_reference=True)
 RECURSIVE_SHAMIR.append(SHAMIR_CONTAINER_PIECE)
 
@@ -40,7 +40,7 @@ SCHEMA_CONTAINER = Schema({
             "message_digest_algo": Or(*SUPPORTED_HASH_ALGOS),
             "signature_algo": Or(*SUPPORTED_SIGNATURE_ALGOS), 
             "signature_escrow": Const(LOCAL_ESCROW_MARKER),
-            Optional("keychain_uid"): object}]
+            Optional("keychain_uid"): And(str, Regex('[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}'))}]
         }]})
 
 """ Some conf to check Schema """
@@ -55,7 +55,7 @@ COMPLEX_CONTAINER_CONF = dict(
         dict(
             data_encryption_algo="AES_CBC",
             key_encryption_strata=[
-                dict(key_encryption_algo="RSA_OAEP", key_escrow=dict(escrow_type="local"), keychain_uid=UUID("0e8e861e-f0f7-e54b-18ea-34798d5daaaa"))
+                dict(key_encryption_algo="RSA_OAEP", key_escrow=dict(escrow_type="local"), keychain_uid="0e8e861e-f0f7-e54b-18ea-34798d5daaaa")
             ],
             data_signatures=[
                 dict(message_digest_algo="SHA3_512", signature_algo="DSA_DSS", signature_escrow=dict(escrow_type="local"))
@@ -73,7 +73,7 @@ COMPLEX_CONTAINER_CONF = dict(
                     message_digest_algo="SHA512",
                     signature_algo="ECC_DSS",
                     signature_escrow=dict(escrow_type="local"),
-                    keychain_uid=UUID("65dbbe4f-0bd5-4083-a274-3c76efeebbbb"),
+                    keychain_uid="65dbbe4f-0bd5-4083-a274-3c76efeebbbb",
                 ),
             ],
         ),
@@ -109,7 +109,7 @@ COMPLEX_SHAMIR_CONTAINER_CONF = dict(
                         dict(key_encryption_strata=[
                                  dict(key_encryption_algo="RSA_OAEP", key_escrow=LOCAL_ESCROW_MARKER)],),
                         dict(key_encryption_strata=[
-                                 dict(key_encryption_algo="RSA_OAEP", key_escrow=LOCAL_ESCROW_MARKER, keychain_uid=UUID("65dbbe4f-0bd5-4083-a274-3c76efeebbbb"))],),
+                                 dict(key_encryption_algo="RSA_OAEP", key_escrow=LOCAL_ESCROW_MARKER, keychain_uid="65dbbe4f-0bd5-4083-a274-3c76efeebbbb")],),
                     ],
                 )
             ],
@@ -118,7 +118,7 @@ COMPLEX_SHAMIR_CONTAINER_CONF = dict(
                     message_digest_algo="SHA3_256",
                     signature_algo="RSA_PSS",
                     signature_escrow=LOCAL_ESCROW_MARKER,
-                    keychain_uid=UUID("65dbbe4f-0bd5-4083-a274-3c76efeebbbb"),
+                    keychain_uid="65dbbe4f-0bd5-4083-a274-3c76efeebbbb",
                 ),
                 dict(message_digest_algo="SHA512", signature_algo="ECC_DSS", signature_escrow=LOCAL_ESCROW_MARKER),
             ],
@@ -164,9 +164,9 @@ COMPLEX_STRATAS_SHAMIR_CONTAINER_CONF = dict(
                                     dict(key_encryption_strata=[
                                             dict(key_encryption_algo="RSA_OAEP", key_escrow=LOCAL_ESCROW_MARKER)],),
                                     dict(key_encryption_strata=[
-                                            dict(key_encryption_algo="RSA_OAEP", key_escrow=LOCAL_ESCROW_MARKER, keychain_uid=UUID("65dbbe4f-0bd5-4083-a274-3c76efeebbbb"))],),],)]),
+                                            dict(key_encryption_algo="RSA_OAEP", key_escrow=LOCAL_ESCROW_MARKER, keychain_uid="65dbbe4f-0bd5-4083-a274-3c76efeebbbb")],),],)]),
                         dict(key_encryption_strata=[
-                                 dict(key_encryption_algo="RSA_OAEP", key_escrow=LOCAL_ESCROW_MARKER, keychain_uid=UUID("65dbbe4f-0bd5-4083-a274-3c76efeebbbb"))],),
+                                 dict(key_encryption_algo="RSA_OAEP", key_escrow=LOCAL_ESCROW_MARKER, keychain_uid="65dbbe4f-0bd5-4083-a274-3c76efeebbbb")],),
                     ],
                 )
             ],
@@ -175,7 +175,64 @@ COMPLEX_STRATAS_SHAMIR_CONTAINER_CONF = dict(
                     message_digest_algo="SHA3_256",
                     signature_algo="RSA_PSS",
                     signature_escrow=LOCAL_ESCROW_MARKER,
-                    keychain_uid=UUID("65dbbe4f-0bd5-4083-a274-3c76efeebbbb"),
+                    keychain_uid="65dbbe4f-0bd5-4083-a274-3c76efeebbbb",
+                ),
+                dict(message_digest_algo="SHA512", signature_algo="ECC_DSS", signature_escrow=LOCAL_ESCROW_MARKER),
+            ],
+        ),
+    ])
+
+#Complex container with recursive Shamir WITH AN ERROR
+ERROR_COMPLEX_STRATAS_SHAMIR_CONTAINER_CONF = dict(
+    data_encryption_strata=[
+        dict(
+            data_encryption_algo="AES_EAX",
+            key_encryption_strata=[dict(key_encryption_algo="RSA_OAEP", key_escrow=LOCAL_ESCROW_MARKER)],
+            data_signatures=[],
+        ),
+        dict(
+            data_encryption_algo="AES_CBC",
+            key_encryption_strata=[dict(key_encryption_algo="RSA_OAEP", key_escrow=LOCAL_ESCROW_MARKER)],
+            data_signatures=[
+                dict(message_digest_algo="SHA3_512", signature_algo="DSA_DSS", signature_escrow=LOCAL_ESCROW_MARKER)
+            ],
+        ),
+        dict(
+            data_encryption_algo="CHACHA20_POLY1305",
+            key_encryption_strata=[
+                dict(
+                    key_encryption_algo=SHARED_SECRET_MARKER,
+                    key_shared_secret_threshold=2,
+                    key_shared_secret_escrows=[
+                        dict(key_encryption_strata=[
+                                 dict(key_encryption_algo="RSA_OAEP", key_escrow=LOCAL_ESCROW_MARKER),
+                                 dict(key_encryption_algo="RSA_OAEP", key_escrow=LOCAL_ESCROW_MARKER)],),
+                        dict(key_encryption_strata=[
+                                 dict(key_encryption_algo="", key_escrow=LOCAL_ESCROW_MARKER)],), #Here the error
+                        dict(key_encryption_strata=[dict(
+                                key_encryption_algo=SHARED_SECRET_MARKER,
+                                key_shared_secret_threshold=2,
+                                key_shared_secret_escrows=[
+                                    dict(key_encryption_strata=[
+                                            dict(key_encryption_algo="RSA_OAEP", key_escrow=LOCAL_ESCROW_MARKER),
+                                            dict(key_encryption_algo="RSA_OAEP", key_escrow=LOCAL_ESCROW_MARKER)],),
+                                    dict(key_encryption_strata=[
+                                            dict(key_encryption_algo="RSA_OAEP", key_escrow=LOCAL_ESCROW_MARKER)],),
+                                    dict(key_encryption_strata=[
+                                            dict(key_encryption_algo="RSA_OAEP", key_escrow=LOCAL_ESCROW_MARKER)],),
+                                    dict(key_encryption_strata=[
+                                            dict(key_encryption_algo="RSA_OAEP", key_escrow=LOCAL_ESCROW_MARKER, keychain_uid="65dbbe4f-0bd5-4083-a274-3c76efeebbbb")],),],)]),
+                        dict(key_encryption_strata=[
+                                 dict(key_encryption_algo="RSA_OAEP", key_escrow=LOCAL_ESCROW_MARKER, keychain_uid="65dbbe4f-0bd5-4083-a274-3c76efeebbbb")],),
+                    ],
+                )
+            ],
+            data_signatures=[
+                dict(
+                    message_digest_algo="SHA3_256",
+                    signature_algo="RSA_PSS",
+                    signature_escrow=LOCAL_ESCROW_MARKER,
+                    keychain_uid="65dbbe4f-0bd5-4083-a274-3c76efeebbbb",
                 ),
                 dict(message_digest_algo="SHA512", signature_algo="ECC_DSS", signature_escrow=LOCAL_ESCROW_MARKER),
             ],
@@ -196,8 +253,11 @@ def checkSchema(conf_schema, conf):
 #print(checkSchema(SCHEMA_CONTAINER, COMPLEX_STRATAS_SHAMIR_CONTAINER_CONF))
 
 """ json_schema + json.dumps = To create the Json file """
-json_schema_tree = json.dumps(SCHEMA_CONTAINER.json_schema("Schema_container"), indent=4)
+json_schema_tree = SCHEMA_CONTAINER.json_schema("Schema_container")
 #print(json_schema_tree)
+json_tree= json.dumps(json_schema_tree, indent=4)
+
+print(validate(COMPLEX_CONTAINER_CONF,json_schema_tree))
 
 if __name__ == "__main__":
     print("hello")
