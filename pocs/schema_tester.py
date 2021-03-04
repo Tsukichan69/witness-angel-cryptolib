@@ -8,12 +8,15 @@ from schema import Schema, Optional, Or, And, SchemaError, Const, Regex
 from uuid import UUID
 import json
 import math
-from json_schema import json_schema, validate
+import jsonschema
+from jsonschema import validate
 
-""" Pieces of the global Schema for containers :
+""" 
+Pieces of the global Schema for containers :
 
 First "CONTAINER_PIECE" is piece of the simple container
-Secund "SHAMIR_CONTAINER_PIECE" is piece of the Shamir container, can be recursive """
+Secund "SHAMIR_CONTAINER_PIECE" is piece of the Shamir container, can be recursive 
+"""
 CONTAINER_PIECE = {
             "key_encryption_algo" : Or(*ASYMMETRIC_KEY_TYPES_REGISTRY), 
             "key_escrow": Const(LOCAL_ESCROW_MARKER),
@@ -27,8 +30,7 @@ SHAMIR_CONTAINER_PIECE = Schema({
                 "key_encryption_strata": Or([{
                     "key_encryption_algo": Or(*ASYMMETRIC_KEY_TYPES_REGISTRY),
                     "key_escrow": Const(LOCAL_ESCROW_MARKER),
-                    Optional("keychain_uid"): And(str, Regex('[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}'))}], RECURSIVE_SHAMIR),
-}]}, name= "Recursive_shamir", as_reference=True)
+                    Optional("keychain_uid"): And(str, Regex('[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}'))}], RECURSIVE_SHAMIR)}]}, name= "Recursive_shamir", as_reference=True)
 RECURSIVE_SHAMIR.append(SHAMIR_CONTAINER_PIECE)
 
 """ Schema = Creation of a Schema for the containers, depending on the level of complexity, some elements are optional"""
@@ -42,6 +44,21 @@ SCHEMA_CONTAINER = Schema({
             "signature_escrow": Const(LOCAL_ESCROW_MARKER),
             Optional("keychain_uid"): And(str, Regex('[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}'))}]
         }]})
+
+def checkSchema(conf_schema, conf):
+    """ To check that the Schema is compatible with the configuration """
+    try:
+        conf_schema.validate(conf)
+        return True
+    except SchemaError as exc:
+        raise
+        print("<<<", exc)
+        return False
+
+
+""" 
+Here is just for testing
+"""
 
 """ Some conf to check Schema """
 #Complex container without Shamir
@@ -239,15 +256,9 @@ ERROR_COMPLEX_STRATAS_SHAMIR_CONTAINER_CONF = dict(
         ),
     ])
 
-def checkSchema(conf_schema, conf):
-    """ To check that the Schema is compatible with the configuration """
-    try:
-        conf_schema.validate(conf)
-        return True
-    except SchemaError as exc:
-        raise
-        print("<<<", exc)
-        return False
+"""
+End of Test Configuration
+"""
 
 #Easy way to check the Schema
 #print(checkSchema(SCHEMA_CONTAINER, COMPLEX_STRATAS_SHAMIR_CONTAINER_CONF))
@@ -257,7 +268,9 @@ json_schema_tree = SCHEMA_CONTAINER.json_schema("Schema_container")
 #print(json_schema_tree)
 json_tree= json.dumps(json_schema_tree, indent=4)
 
-print(validate(COMPLEX_CONTAINER_CONF,json_schema_tree))
+""" To validate datas with the jsonschema """
+jsonschema.validate(COMPLEX_STRATAS_SHAMIR_CONTAINER_CONF, json_schema_tree)
+
 
 if __name__ == "__main__":
     print("hello")
