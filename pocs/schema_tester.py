@@ -268,8 +268,23 @@ json_schema_tree = SCHEMA_CONTAINER.json_schema("Schema_container")
 #print(json_schema_tree)
 json_tree= json.dumps(json_schema_tree, indent=4)
 
-""" To validate datas with the jsonschema """
-jsonschema.validate(COMPLEX_STRATAS_SHAMIR_CONTAINER_CONF, json_schema_tree)
+
+def validate_json(json_data):
+    """ To validate datas with the jsonschema """
+    """REF: https://json-schema.org/ """
+    try:
+        validate(instance=json_data, schema=json_schema_tree)
+    except jsonschema.exceptions.ValidationError as err:
+        print(err)
+        err = "Given data is InValid"
+        return False, err
+
+    message = "Given data is Valid"
+    return True, message
+
+# validate it
+is_valid, msg = validate_json(COMPLEX_STRATAS_SHAMIR_CONTAINER_CONF)
+print(msg)
 
 
 if __name__ == "__main__":
