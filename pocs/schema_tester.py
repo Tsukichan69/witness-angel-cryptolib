@@ -11,59 +11,47 @@ import math
 import jsonschema
 from jsonschema import validate
 
-micro_schema_binary = {
-    "$binary": [{
-                "base64": And(str, Regex('^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=|[A-Za-z0-9+/]{4})$')),
-                "subType": Or("00","03")
-    }]
-}
-micro_schema_timestamp = {
-    "$numberInt": Or(str, int)
-}
 
-for_container= True
+def  create_schema(for_container) :
+    global SCHEMA_CONTAINER
 
-if for_container:
-    extra_params_container = {
-        "container_format": "WA_0.1a",
-        "container_uid": [{
-            **micro_schema_binary
-            }],
-        "data_ciphertext": [{
-            **micro_schema_binary
-    }]}
-    extra_cyphertext ={
-        "key_ciphertext": [{**micro_schema_binary}]
-    }
-    extra_signature ={
-        "signature_value": [{
-            "digest": [{**micro_schema_binary}],
-        "timestamp_utc": [{
-            **micro_schema_timestamp
-        }]}]
-    }
-    extra_keychain={
-        "keychain_uid" : [{**micro_schema_binary}]
-    }
-else :
-    extra_params_container={}
-    extra_cyphertext ={}
-    extra_signature={}
-    extra_keychain={}
+    micro_schema_binary = {
+        "$binary": [{
+            "base64": And(str, Regex('^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=|[A-Za-z0-9+/]{4})$')),
+            "subType": Or("00","03")}]}
+    micro_schema_timestamp = {
+        "$numberInt": Or(str, int)
+	}
 
-    """ 
-    Pieces of the global Schema for containers :
-
-    First "CONTAINER_PIECE" is piece of the simple container
-    Secund "SHAMIR_CONTAINER_PIECE" is piece of the Shamir container, can be recursive 
-    """
-CONTAINER_PIECE = {
-                "key_encryption_algo" : Or(*ASYMMETRIC_KEY_TYPES_REGISTRY), 
-                "key_escrow": Const(LOCAL_ESCROW_MARKER),
-                Optional("keychain_uid"): And(str, Regex('[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}'))}
-
-RECURSIVE_SHAMIR=[]
-SHAMIR_CONTAINER_PIECE = Schema({
+    if for_container:
+        extra_container = {
+            "container_format": "WA_0.1a",
+            "container_uid": [{
+                **micro_schema_binary}],
+            "data_ciphertext": [{
+                **micro_schema_binary}]}
+        extra_cyphertext = {
+            "key_ciphertext": [{**micro_schema_binary}]}
+        extra_signature = {
+            "signature_value": [{
+                "digest": [{**micro_schema_binary}],
+            "timestamp_utc": [{
+                **micro_schema_timestamp}]}]}
+        extra_keychain = {
+            "keychain_uid" : [{**micro_schema_binary}]}
+    else :
+        extra_container={}
+        extra_cyphertext={}
+        extra_signature={}
+        extra_keychain={}
+	
+    CONTAINER_PIECE = {
+        "key_encryption_algo" : Or(*ASYMMETRIC_KEY_TYPES_REGISTRY), 
+        "key_escrow": Const(LOCAL_ESCROW_MARKER),
+        Optional("keychain_uid"): And(str, Regex('[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}'))}
+	
+    RECURSIVE_SHAMIR=[]
+    SHAMIR_CONTAINER_PIECE = Schema({
         "key_encryption_algo": SHARED_SECRET_MARKER,
         "key_shared_secret_threshold": And(int, lambda n: 0 < n < math.inf),
         "key_shared_secret_escrows": [{ 
@@ -71,38 +59,41 @@ SHAMIR_CONTAINER_PIECE = Schema({
                         "key_encryption_algo": Or(*ASYMMETRIC_KEY_TYPES_REGISTRY),
                         "key_escrow": Const(LOCAL_ESCROW_MARKER),
                         Optional("keychain_uid"): And(str, Regex('[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}'))}], RECURSIVE_SHAMIR)}]}, name= "Recursive_shamir", as_reference=True)
-RECURSIVE_SHAMIR.append(SHAMIR_CONTAINER_PIECE)
+    RECURSIVE_SHAMIR.append(SHAMIR_CONTAINER_PIECE)
 
-""" Schema = Creation of a Schema for the containers, depending on the level of complexity, some elements are optional"""
-SCHEMA_CONTAINER = Schema({**extra_params_container,
-    "data_encryption_strata" : [{
-        "data_encryption_algo": Or(*SUPPORTED_ENCRYPTION_ALGOS),
-        "key_encryption_strata": [SHAMIR_CONTAINER_PIECE, CONTAINER_PIECE],
-        **extra_cyphertext,
-        Optional("data_signatures"): [{
-            "message_digest_algo": Or(*SUPPORTED_HASH_ALGOS),
-            "signature_algo": Or(*SUPPORTED_SIGNATURE_ALGOS), 
-            "signature_escrow": Const(LOCAL_ESCROW_MARKER),
-            **extra_signature,
-            Optional("keychain_uid"): And(str, Regex('[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}'))}]
-        }],
-        **extra_keychain,
-        Optional("metadata"): str})
+    SCHEMA_CONTAINER = Schema({**extra_container,
+		"data_encryption_strata" : [{
+			"data_encryption_algo": Or(*SUPPORTED_ENCRYPTION_ALGOS),
+			"key_encryption_strata": [SHAMIR_CONTAINER_PIECE, CONTAINER_PIECE],
+			**extra_cyphertext,
+			Optional("data_signatures"): [{
+				"message_digest_algo": Or(*SUPPORTED_HASH_ALGOS),
+				"signature_algo": Or(*SUPPORTED_SIGNATURE_ALGOS), 
+				"signature_escrow": Const(LOCAL_ESCROW_MARKER),
+				**extra_signature,
+				Optional("keychain_uid"): And(str, Regex('[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}'))}]
+			}],
+			**extra_keychain,
+			Optional("metadata"): str})
+	
+    return SCHEMA_CONTAINER
+
+create_schema(for_container=True)
 
 
 def checkSchema(conf_schema, conf):
-        """ To check that the Schema is compatible with the configuration """
-        try:
-            conf_schema.validate(conf)
-            return True
-        except SchemaError as exc:
-            raise
-            print("<<<", exc)
-            return False
+    """ To check that the Schema is compatible with the configuration """
+    try:
+        conf_schema.validate(conf)
+        return True
+    except SchemaError as exc:
+        raise
+        print("<<<", exc)
+        return False
 
 
 """ 
-Here is just for testing
+Here is just for testing the container's configuration
 """
 
 """ Some conf to check Schema """
